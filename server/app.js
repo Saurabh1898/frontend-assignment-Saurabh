@@ -28,7 +28,31 @@ app.enable('trust proxy');
 
 app.post('/api/fetchStockData', (req, res) => {
     // YOUR CODE GOES HERE, PLEASE DO NOT EDIT ANYTHING OUTSIDE THIS FUNCTION
-    res.sendStatus(200);
+    try {
+        const { stockSymbol, date } = req.body;
+
+        // Ensure stockSymbol and date are provided in the request
+        if (!stockSymbol || !date) {
+            return res.status(400).json({ error: "Stock symbol and date are required." });
+        }
+
+        // Format the date to match Polygon API's requirements (YYYY-MM-DD)
+        const formattedDate = new Date(date).toISOString().split('T')[0];
+
+        // Construct the API URL to fetch trade statistics for the given stock and date
+        const apiUrl = `https://api.polygon.io/v1/open-close/${stockSymbol}/${formattedDate}?apiKey=${process.env.POLYGON_API_KEY}`;
+
+        // Make a request to the Polygon API
+        const response = await axios.get(apiUrl);
+
+        // Extract the trade statistics from the response
+        const { open, high, low, close, volume } = response.data;
+
+        // Return the trade statistics as a JSON response
+        res.json({ open, high, low, close, volume });
+    } catch (error) {
+        console.error("Error fetching trade statistics:", error.message);
+        res.status(500).json({ error: "Failed to fetch trade statistics." });
 });
 
 const port = process.env.PORT || 5000;
